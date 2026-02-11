@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="blue">#0000FF</color>
+    <color name="orange">#FF9800</color>
+    <color name="brown">#795548</color>
+    <color name="yellow">#FFEB3B</color>
+    <color name="blue_stronght">#4169E1</color>
+    <color name="primary_blue">#4169E1</color>
+    <color name="light_blue_sky">#E3F2FD</color>
+    <color name="accent_orange">#FF9800</color>
+    <color name="soft_gray">#F5F5F5</color>
+    <color name="deep_navy">#1A237E</color>
+    <color name="pure_white">#FFFFFF</color>
+    <color name="dark_charcoal">#333333</color>
+    <color name="soft_red">#E57373</color>
+    <color name="mint_green">#A8E6CF</color>
+
+
+
+    <!-- Colores nuevos necesarios para el nuevo layout -->
+    <color name="background_light">#F8FAFC</color>
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#757575</color>
+    <color name="hint_blue">#87CEEB</color>
+    <color name="text_on_primary">#FFFFFF</color>
+
+
+    <!-- Core -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+
+    <!-- Primary blues -->
+    <color name="blue_primary">#4169E1</color>
+    <color name="blue_dark">#1A237E</color>
+    <color name="blue_light">#E3F2FD</color>
+    <color name="blue_soft">#BBDEFB</color>
+    <color name="blue_accent">#2196F3</color>
+
+    <!-- Neutrals -->
+    <color name="gray_light">#F5F5F5</color>
+    <color name="gray_dark">#333333</color>
+
+    <!-- Accent -->
+    <color name="orange_accent">#FF9800</color>
+
+</resources>
