@@ -15,9 +15,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.myapplication.R;
 import com.example.myapplication.managers.LoginSingleton;
-import com.example.myapplication.managers.UserManager;
+import com.example.myapplication.presenters.MainPresenter;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements MainPresenter.View {
 
     private Button btnComenzar;
     private Button btnVerCuentas;
@@ -25,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvBienvenido;
     private TextView tvDescripcion;
     private ActivityResultLauncher<Intent> pinLauncher;
+    private MainPresenter presenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,12 +39,14 @@ public class MainActivity extends AppCompatActivity {
         btnVerCuentas = findViewById(R.id.btnVerCuentas);
         btnAdministrar = findViewById(R.id.btnAdministrar);
 
+        // Crear Presenter y pasarle this como View
+        presenter = new MainPresenter(this, this);
+
         // Launcher para PIN/huella (solo para "Ver Cuentas")
         pinLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
-                        // PIN correcto → abrir PasswordListActivity
                         Intent intent = new Intent(MainActivity.this, PasswordListActivity.class);
                         startActivity(intent);
                     } else {
@@ -51,7 +54,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-        updateUI();
+        // Cargar estado inicial
+        presenter.updateUI();
 
         btnComenzar.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, RegisterActivity.class);
@@ -59,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnVerCuentas.setOnClickListener(v -> {
-            requestPinAuthentication();  // pide PIN ANTES de cambiar pantalla
+            requestPinAuthentication();
         });
 
         btnAdministrar.setOnClickListener(v -> {
@@ -71,33 +75,28 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        updateUI();
+        presenter.updateUI();  // Refrescar desde Presenter
     }
 
-    private void updateUI() {
-        boolean isRegistered = LoginSingleton.getInstance().isRegistered();
+    // Implementación de la interfaz View del Presenter
+    @Override
+    public void showRegisteredState(String welcomeText) {
+        tvBienvenido.setText(welcomeText);
+        tvBienvenido.setTextColor(getResources().getColor(R.color.mint_green));
 
-        if (isRegistered) {
-            // Obtener el nombre del usuario actual (logueado automáticamente al registrar)
-            String name = "";
-            if (UserManager.getInstance().getCurrentUser() != null) {
-                name = UserManager.getInstance().getCurrentUser().getName();
-            }
+        btnComenzar.setVisibility(View.GONE);
+        btnVerCuentas.setVisibility(View.VISIBLE);
+        btnAdministrar.setVisibility(View.VISIBLE);
+    }
 
-            // Texto personalizado con nombre + color verde menta
-            tvBienvenido.setText("¡Bienvenido de nuevo, " + name + "!");
-            tvBienvenido.setTextColor(getResources().getColor(R.color.mint_green));
+    @Override
+    public void showInitialState(String welcomeText) {
+        tvBienvenido.setText(welcomeText);
+        tvBienvenido.setTextColor(getResources().getColor(R.color.primary_blue)); // o el color original
 
-            btnComenzar.setVisibility(View.GONE);
-            btnVerCuentas.setVisibility(View.VISIBLE);
-            btnAdministrar.setVisibility(View.VISIBLE);
-        } else {
-            tvBienvenido.setText("Bienvenido");
-            tvBienvenido.setTextColor(getResources().getColor(R.color.primary_blue));
-            btnComenzar.setVisibility(View.VISIBLE);
-            btnVerCuentas.setVisibility(View.GONE);
-            btnAdministrar.setVisibility(View.GONE);
-        }
+        btnComenzar.setVisibility(View.VISIBLE);
+        btnVerCuentas.setVisibility(View.GONE);
+        btnAdministrar.setVisibility(View.GONE);
     }
 
     private void requestPinAuthentication() {
