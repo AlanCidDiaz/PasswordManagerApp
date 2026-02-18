@@ -44,8 +44,8 @@ public class RegisterPresenter {
         // Login automático
         UserManager.getInstance().setCurrentUser(newUser);
         LoginSingleton.getInstance().setCurrentUser(newUser);
+        LoginSingleton.getInstance().setNormalUser(newUser);
         LoginSingleton.getInstance().setRegistered(true);
-        LoginSingleton.getInstance().setNormalUserEmail(email);  // ← guardamos el email del normal
 
         Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show();
         return true;
