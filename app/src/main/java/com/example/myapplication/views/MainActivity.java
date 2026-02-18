@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.myapplication.R;
 import com.example.myapplication.managers.LoginSingleton;
 import com.example.myapplication.managers.UserManager;
+import com.example.myapplication.models.User;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,19 +32,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Enlazar vistas
         tvBienvenido = findViewById(R.id.tvBienvenido);
         tvDescripcion = findViewById(R.id.tvDescripcion);
         btnComenzar = findViewById(R.id.btnComenzar);
         btnVerCuentas = findViewById(R.id.btnVerCuentas);
         btnAdministrar = findViewById(R.id.btnAdministrar);
 
-        // Launcher para PIN/huella (solo para "Ver Cuentas")
         pinLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
-                        // PIN correcto → abrir PasswordListActivity
                         Intent intent = new Intent(MainActivity.this, PasswordListActivity.class);
                         startActivity(intent);
                     } else {
@@ -59,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnVerCuentas.setOnClickListener(v -> {
-            requestPinAuthentication();  // pide PIN ANTES de cambiar pantalla
+            requestPinAuthentication();
         });
 
         btnAdministrar.setOnClickListener(v -> {
@@ -71,6 +69,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Si venimos de admin, restaurar el usuario normal
+        if (LoginSingleton.getInstance().getCurrentUser() == null ||
+                LoginSingleton.getInstance().getCurrentUser().isAdmin()) {
+            LoginSingleton.getInstance().setCurrentUser(LoginSingleton.getInstance().getNormalUser());
+        }
         updateUI();
     }
 
@@ -78,13 +81,12 @@ public class MainActivity extends AppCompatActivity {
         boolean isRegistered = LoginSingleton.getInstance().isRegistered();
 
         if (isRegistered) {
-            // Obtener el nombre del usuario actual (logueado automáticamente al registrar)
             String name = "";
-            if (UserManager.getInstance().getCurrentUser() != null) {
-                name = UserManager.getInstance().getCurrentUser().getName();
+            User currentUser = LoginSingleton.getInstance().getCurrentUser();
+            if (currentUser != null) {
+                name = currentUser.getName();
             }
 
-            // Texto personalizado con nombre + color verde menta
             tvBienvenido.setText("¡Bienvenido de nuevo, " + name + "!");
             tvBienvenido.setTextColor(getResources().getColor(R.color.mint_green));
 

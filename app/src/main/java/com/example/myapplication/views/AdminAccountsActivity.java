@@ -14,24 +14,23 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
 import com.example.myapplication.models.PasswordEntry;
-import com.example.myapplication.models.User;
-import com.example.myapplication.managers.UserManager;
+import com.example.myapplication.presenters.AdminAccountsPresenter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class AdminAccountsActivity extends AppCompatActivity implements PasswordAdapter.PasswordActionListener {
+public class AdminAccountsActivity extends AppCompatActivity implements AdminAccountsPresenter.View, PasswordAdapter.PasswordActionListener {
 
     private RecyclerView recyclerAllAccounts;
     private TextView tvEmpty;
     private PasswordAdapter adapter;
-    private List<PasswordEntry> allAccounts = new ArrayList<>();
+    private AdminAccountsPresenter presenter;
 
     private final ActivityResultLauncher<Intent> editLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    loadAllAccounts(); // Refrescar después de editar
+                    presenter.loadAllAccounts(); // Refrescar después de editar
                 }
             });
 
@@ -49,90 +48,58 @@ public class AdminAccountsActivity extends AppCompatActivity implements Password
         }
 
         recyclerAllAccounts.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new PasswordAdapter(allAccounts, true, this);
+
+        // Crear Presenter y pasarle this como View
+        presenter = new AdminAccountsPresenter(this, this);
+
+        adapter = new PasswordAdapter(new ArrayList<>(), true, this);
         recyclerAllAccounts.setAdapter(adapter);
 
-        loadAllAccounts();
+        presenter.loadAllAccounts();  // Cargar cuentas desde Presenter
     }
 
-    private void loadAllAccounts() {
-        allAccounts.clear();
-
-        for (User user : UserManager.getInstance().getAllUsers()) {
-            if (!user.isAdmin()) {
-                List<PasswordEntry> userPasswords = UserManager.getInstance().getPasswords(user.getEmail());
-                allAccounts.addAll(userPasswords);
-            }
-        }
-
-        if (allAccounts.isEmpty()) {
-            tvEmpty.setText("No hay cuentas registradas aún.");
+    // Implementación de la interfaz View del Presenter
+    @Override
+    public void showAccounts(List<PasswordEntry> accounts) {
+        if (accounts.isEmpty()) {
+            tvEmpty.setText("No hay cuentas registradas por usuarios.");
             tvEmpty.setVisibility(View.VISIBLE);
             recyclerAllAccounts.setVisibility(View.GONE);
         } else {
             tvEmpty.setVisibility(View.GONE);
             recyclerAllAccounts.setVisibility(View.VISIBLE);
-            adapter.updateList(allAccounts);
+            adapter.updateList(accounts);
         }
     }
 
     @Override
-    public void onEdit(PasswordEntry entry, int position) {
-        // Encontrar el email del dueño y el índice real en su lista
-        String ownerEmail = null;
-        int realIndex = -1;
+    public void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
 
-        outerLoop:
-        for (User user : UserManager.getInstance().getAllUsers()) {
-            if (!user.isAdmin()) {
-                List<PasswordEntry> userPasswords = UserManager.getInstance().getPasswords(user.getEmail());
-                for (int i = 0; i < userPasswords.size(); i++) {
-                    if (userPasswords.get(i) == entry) {  // Comparar por referencia (misma instancia)
-                        ownerEmail = user.getEmail();
-                        realIndex = i;
-                        break outerLoop;
-                    }
-                }
-            }
-        }
-
-        if (ownerEmail == null || realIndex == -1) {
-            Toast.makeText(this, "Error: Cuenta no encontrada", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
+    @Override
+    public void openEditPassword(PasswordEntry entry, String ownerEmail, int realIndex) {
         Intent intent = new Intent(this, EditPasswordActivity.class);
         intent.putExtra("password_entry", entry);
         intent.putExtra("owner_email", ownerEmail);
-        intent.putExtra("real_index", realIndex);  // ← pasamos el índice real
+        intent.putExtra("real_index", realIndex);
         editLauncher.launch(intent);
+    }
+
+    // Implementación de PasswordAdapter.PasswordActionListener
+    @Override
+    public void onEdit(PasswordEntry entry, int position) {
+        presenter.editPassword(entry);
     }
 
     @Override
     public void onDelete(PasswordEntry entry, int position) {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Eliminar cuenta")
-                .setMessage("¿Seguro que quieres eliminar " + entry.getAppName() + "?")
-                .setPositiveButton("Eliminar", (dialog, which) -> {
-                    // Buscar y eliminar del mapa de UserManager
-                    for (User user : UserManager.getInstance().getAllUsers()) {
-                        if (!user.isAdmin()) {
-                            List<PasswordEntry> list = UserManager.getInstance().getPasswords(user.getEmail());
-                            if (list.remove(entry)) {
-                                loadAllAccounts(); // Refrescar
-                                Toast.makeText(this, "Cuenta eliminada", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                        }
-                    }
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
+        presenter.deletePassword(entry);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadAllAccounts();
+        presenter.loadAllAccounts();
     }
 }

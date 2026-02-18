@@ -7,14 +7,15 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.myapplication.R;
 import com.example.myapplication.models.User;
-import com.example.myapplication.managers.UserManager;
+import com.example.myapplication.presenters.EditUserPresenter;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.button.MaterialButton;
 
-public class EditUserActivity extends AppCompatActivity {
+public class EditUserActivity extends AppCompatActivity implements EditUserPresenter.View {
 
     private TextInputEditText etName, etEmail, etAltEmail, etPhone;
     private User currentUser;
+    private EditUserPresenter presenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +40,10 @@ public class EditUserActivity extends AppCompatActivity {
             return;
         }
 
-        // Precargar
+        // Crear Presenter y pasarle this como View
+        presenter = new EditUserPresenter(this, this, currentUser);
+
+        // Precargar datos
         etName.setText(currentUser.getName());
         etEmail.setText(currentUser.getEmail());
         etAltEmail.setText(currentUser.getAltEmail());
@@ -51,22 +55,19 @@ public class EditUserActivity extends AppCompatActivity {
             String altEmail = etAltEmail.getText().toString().trim();
             String phone = etPhone.getText().toString().trim();
 
-
-            if (name.isEmpty() || email.isEmpty()) {
-                Toast.makeText(this, "Nombre y email son requeridos", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // Actualizar
-            currentUser.setName(name);
-            currentUser.setEmail(email);
-            currentUser.setAltEmail(altEmail);
-            currentUser.setPhone(phone);
-
-            UserManager.getInstance().updateUser(currentUser);
-            Toast.makeText(this, "Perfil actualizado", Toast.LENGTH_SHORT).show();
-            setResult(RESULT_OK);
-            finish();
+            presenter.saveChanges(name, email, altEmail, phone);
         });
+    }
+
+    // Implementación de la interfaz View del Presenter
+    @Override
+    public void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void finishActivity() {
+        setResult(RESULT_OK);
+        finish();
     }
 }

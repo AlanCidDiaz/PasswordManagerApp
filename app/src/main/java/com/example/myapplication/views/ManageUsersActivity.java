@@ -12,15 +12,17 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
 import com.example.myapplication.models.User;
-import com.example.myapplication.managers.UserManager;
+import com.example.myapplication.presenters.ManageUsersPresenter;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class ManageUsersActivity extends AppCompatActivity implements UserAdapter.UserActionListener {
+public class ManageUsersActivity extends AppCompatActivity implements ManageUsersPresenter.View, UserAdapter.UserActionListener {
 
     private RecyclerView recyclerUsers;
     private TextView tvEmpty;
     private UserAdapter adapter;
+    private ManageUsersPresenter presenter;
 
     private static final int EDIT_USER_REQUEST_CODE = 1002;
 
@@ -33,15 +35,19 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
         tvEmpty = findViewById(R.id.tvEmpty);
 
         recyclerUsers.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new UserAdapter(List.of(), this);
+
+        // Crear Presenter y pasarle this como View
+        presenter = new ManageUsersPresenter(this, this);
+
+        adapter = new UserAdapter(new ArrayList<>(), this);
         recyclerUsers.setAdapter(adapter);
 
-        loadUsers();
+        presenter.loadUsers();  // Cargar usuarios desde Presenter
     }
 
-    private void loadUsers() {
-        List<User> users = UserManager.getInstance().getAllUsers();
-
+    // Implementación de la interfaz View del Presenter
+    @Override
+    public void showUsers(List<User> users) {
         if (users.isEmpty()) {
             tvEmpty.setVisibility(View.VISIBLE);
             recyclerUsers.setVisibility(View.GONE);
@@ -53,19 +59,18 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
     }
 
     @Override
-    public void onDelete(User user, int position) {
-        if (user.isAdmin()) {
-            Toast.makeText(this, "No puedes eliminar al administrador", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    public void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
 
+    // Implementación de UserAdapter.UserActionListener
+    @Override
+    public void onDelete(User user, int position) {
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Eliminar usuario")
                 .setMessage("¿Seguro que quieres eliminar a " + user.getName() + "?")
                 .setPositiveButton("Eliminar", (dialog, which) -> {
-                    UserManager.getInstance().getAllUsers().remove(user);
-                    loadUsers();
-                    Toast.makeText(this, "Usuario eliminado", Toast.LENGTH_SHORT).show();
+                    presenter.deleteUser(user);  // Delegar al Presenter
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();
@@ -74,14 +79,14 @@ public class ManageUsersActivity extends AppCompatActivity implements UserAdapte
     @Override
     protected void onResume() {
         super.onResume();
-        loadUsers(); // Refrescar después de editar usuario
+        presenter.loadUsers();  // Refrescar desde Presenter
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == EDIT_USER_REQUEST_CODE && resultCode == RESULT_OK) {
-            loadUsers();
+            presenter.loadUsers();  // Refrescar después de editar
         }
     }
 }

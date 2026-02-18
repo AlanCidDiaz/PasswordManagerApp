@@ -1,17 +1,14 @@
 package com.example.myapplication.managers;
 
-import com.example.myapplication.models.PasswordEntry;
 import com.example.myapplication.models.User;
+import com.example.myapplication.models.PasswordEntry;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class UserManager {
     private static UserManager instance;
     private List<User> users = new ArrayList<>();  // Lista de todos los usuarios
-    private Map<String, List<PasswordEntry>> userPasswords = new HashMap<>();  // Clave: email, Valor: lista de contraseñas
     private User currentUser;  // Usuario logueado actual
 
     private UserManager() {
@@ -28,7 +25,7 @@ public class UserManager {
 
     public void addUser(User user) {
         users.add(user);
-        userPasswords.put(user.getEmail(), new ArrayList<>());  // Inicializa lista de contraseñas vacía
+        // Ya no inicializamos userPasswords aquí → lo hace PasswordManager cuando se necesite
     }
 
     public User findUserByEmail(String email) {
@@ -53,15 +50,13 @@ public class UserManager {
         return currentUser;
     }
 
-    // Métodos para contraseñas (para usuarios normales)
+    // Métodos para contraseñas → ahora delegan a PasswordManager
     public void addPassword(String email, PasswordEntry entry) {
-        if (userPasswords.containsKey(email)) {
-            userPasswords.get(email).add(entry);
-        }
+        PasswordManager.getInstance().addPassword(email, entry);
     }
 
     public List<PasswordEntry> getPasswords(String email) {
-        return userPasswords.getOrDefault(email, new ArrayList<>());
+        return PasswordManager.getInstance().getPasswords(email);
     }
 
     // Para admin: gestionar usuarios
@@ -79,12 +74,9 @@ public class UserManager {
             }
         }
 
-        // Si cambió el email, actualizar clave en userPasswords
+        // Si cambió el email, mover contraseñas al nuevo email (usando PasswordManager)
         if (oldEmail != null && !oldEmail.equals(updatedUser.getEmail())) {
-            List<PasswordEntry> passwords = userPasswords.remove(oldEmail);
-            if (passwords != null) {
-                userPasswords.put(updatedUser.getEmail(), passwords);
-            }
+            PasswordManager.getInstance().movePasswords(oldEmail, updatedUser.getEmail());
         }
     }
 }
