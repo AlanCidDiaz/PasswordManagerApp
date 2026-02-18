@@ -10,16 +10,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
 import com.example.myapplication.models.PasswordEntry;
-import com.example.myapplication.managers.UserManager;
-import com.example.myapplication.managers.LoginSingleton;
+import com.example.myapplication.presenters.PasswordListPresenter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PasswordListActivity extends AppCompatActivity {
 
     private RecyclerView recyclerPasswords;
     private TextView tvEmpty;
+    private TextView tvTitle;
     private PasswordAdapter adapter;
+    private PasswordListPresenter presenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,42 +30,29 @@ public class PasswordListActivity extends AppCompatActivity {
 
         recyclerPasswords = findViewById(R.id.recyclerPasswords);
         tvEmpty = findViewById(R.id.tvEmpty);
+        tvTitle = findViewById(R.id.tvTitle);
 
-        TextView tvTitle = findViewById(R.id.tvTitle);
         if (tvTitle != null) {
             tvTitle.setText("Mis Cuentas");
         }
 
         recyclerPasswords.setLayoutManager(new LinearLayoutManager(this));
 
-        // Pasar null como listener (no se usan editar/eliminar en modo normal)
-        adapter = new PasswordAdapter(List.of(), false, null);
+        // Crear Presenter y pasarle this como contexto
+        presenter = new PasswordListPresenter(this);
+
+        // Adapter en modo normal (null listener)
+        adapter = new PasswordAdapter(new ArrayList<>(), false, null);
         recyclerPasswords.setAdapter(adapter);
 
         loadPasswords();
     }
 
     private void loadPasswords() {
-        String emailToLoad;
-
-        // Si hay usuario logueado normal, usa su email
-        if (UserManager.getInstance().getCurrentUser() != null && !UserManager.getInstance().getCurrentUser().isAdmin()) {
-            emailToLoad = UserManager.getInstance().getCurrentUser().getEmail();
-        } else {
-            // Si no hay sesión normal (ej: después de admin), usa el email guardado del registro
-            emailToLoad = LoginSingleton.getInstance().getNormalUserEmail();
-            if (emailToLoad == null) {
-                tvEmpty.setText("No hay usuario registrado.");
-                tvEmpty.setVisibility(View.VISIBLE);
-                recyclerPasswords.setVisibility(View.GONE);
-                return;
-            }
-        }
-
-        List<PasswordEntry> passwords = UserManager.getInstance().getPasswords(emailToLoad);
+        List<PasswordEntry> passwords = presenter.loadPasswords();
 
         if (passwords.isEmpty()) {
-            tvEmpty.setText("No tienes cuentas registradas aún. Pídele al Administrador que registre algunas.");
+            tvEmpty.setText(presenter.getEmptyMessage());
             tvEmpty.setVisibility(View.VISIBLE);
             recyclerPasswords.setVisibility(View.GONE);
         } else {
@@ -76,6 +65,6 @@ public class PasswordListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadPasswords();  // Refresca al volver
+        loadPasswords();
     }
 }
