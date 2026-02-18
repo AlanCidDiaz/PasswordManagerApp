@@ -15,9 +15,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.myapplication.R;
 import com.example.myapplication.managers.LoginSingleton;
-import com.example.myapplication.presenters.MainPresenter;
+import com.example.myapplication.managers.UserManager;
+import com.example.myapplication.models.User;
 
-public class MainActivity extends AppCompatActivity implements MainPresenter.View {
+public class MainActivity extends AppCompatActivity {
 
     private Button btnComenzar;
     private Button btnVerCuentas;
@@ -25,24 +26,18 @@ public class MainActivity extends AppCompatActivity implements MainPresenter.Vie
     private TextView tvBienvenido;
     private TextView tvDescripcion;
     private ActivityResultLauncher<Intent> pinLauncher;
-    private MainPresenter presenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Enlazar vistas
         tvBienvenido = findViewById(R.id.tvBienvenido);
         tvDescripcion = findViewById(R.id.tvDescripcion);
         btnComenzar = findViewById(R.id.btnComenzar);
         btnVerCuentas = findViewById(R.id.btnVerCuentas);
         btnAdministrar = findViewById(R.id.btnAdministrar);
 
-        // Crear Presenter y pasarle this como View
-        presenter = new MainPresenter(this, this);
-
-        // Launcher para PIN/huella (solo para "Ver Cuentas")
         pinLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -54,8 +49,7 @@ public class MainActivity extends AppCompatActivity implements MainPresenter.Vie
                     }
                 });
 
-        // Cargar estado inicial
-        presenter.updateUI();
+        updateUI();
 
         btnComenzar.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, RegisterActivity.class);
@@ -75,28 +69,37 @@ public class MainActivity extends AppCompatActivity implements MainPresenter.Vie
     @Override
     protected void onResume() {
         super.onResume();
-        presenter.updateUI();  // Refrescar desde Presenter
+        // Si venimos de admin, restaurar el usuario normal
+        if (LoginSingleton.getInstance().getCurrentUser() == null ||
+                LoginSingleton.getInstance().getCurrentUser().isAdmin()) {
+            LoginSingleton.getInstance().setCurrentUser(LoginSingleton.getInstance().getNormalUser());
+        }
+        updateUI();
     }
 
-    // Implementación de la interfaz View del Presenter
-    @Override
-    public void showRegisteredState(String welcomeText) {
-        tvBienvenido.setText(welcomeText);
-        tvBienvenido.setTextColor(getResources().getColor(R.color.mint_green));
+    private void updateUI() {
+        boolean isRegistered = LoginSingleton.getInstance().isRegistered();
 
-        btnComenzar.setVisibility(View.GONE);
-        btnVerCuentas.setVisibility(View.VISIBLE);
-        btnAdministrar.setVisibility(View.VISIBLE);
-    }
+        if (isRegistered) {
+            String name = "";
+            User currentUser = LoginSingleton.getInstance().getCurrentUser();
+            if (currentUser != null) {
+                name = currentUser.getName();
+            }
 
-    @Override
-    public void showInitialState(String welcomeText) {
-        tvBienvenido.setText(welcomeText);
-        tvBienvenido.setTextColor(getResources().getColor(R.color.primary_blue)); // o el color original
+            tvBienvenido.setText("¡Bienvenido de nuevo, " + name + "!");
+            tvBienvenido.setTextColor(getResources().getColor(R.color.mint_green));
 
-        btnComenzar.setVisibility(View.VISIBLE);
-        btnVerCuentas.setVisibility(View.GONE);
-        btnAdministrar.setVisibility(View.GONE);
+            btnComenzar.setVisibility(View.GONE);
+            btnVerCuentas.setVisibility(View.VISIBLE);
+            btnAdministrar.setVisibility(View.VISIBLE);
+        } else {
+            tvBienvenido.setText("Bienvenido");
+            tvBienvenido.setTextColor(getResources().getColor(R.color.primary_blue));
+            btnComenzar.setVisibility(View.VISIBLE);
+            btnVerCuentas.setVisibility(View.GONE);
+            btnAdministrar.setVisibility(View.GONE);
+        }
     }
 
     private void requestPinAuthentication() {

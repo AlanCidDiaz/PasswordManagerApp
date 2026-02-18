@@ -5,8 +5,8 @@ import com.example.myapplication.models.User;
 public class LoginSingleton {
     private static LoginSingleton instance;
     private User currentUser;
+    private User normalUser;
     private boolean isRegistered = false;
-    private String normalUserEmail = null;  // ← email del usuario normal registrado
 
     private LoginSingleton() {
     }
@@ -26,10 +26,16 @@ public class LoginSingleton {
         return currentUser;
     }
 
-    public void logout() {
-        currentUser = null;
+    public void setNormalUser(User user) {
+        this.normalUser = user;
+        this.isRegistered = true;
     }
 
+    public User getNormalUser() {
+        return normalUser;
+    }
+
+    // Método que faltaba: setRegistered (lo usan RegisterPresenter y otros)
     public void setRegistered(boolean registered) {
         this.isRegistered = registered;
     }
@@ -38,11 +44,19 @@ public class LoginSingleton {
         return isRegistered;
     }
 
-    public void setNormalUserEmail(String email) {
-        this.normalUserEmail = email;
+    // Método que faltaba: getNormalUserEmail (lo usa PasswordListPresenter)
+    public String getNormalUserEmail() {
+        if (normalUser != null) {
+            return normalUser.getEmail();
+        }
+        return null;
     }
 
-    public String getNormalUserEmail() {
-        return normalUserEmail;
+    public void logout() {
+        currentUser = null;
+    }
+
+    public void logoutAdmin() {
+        currentUser = normalUser;
     }
 }
